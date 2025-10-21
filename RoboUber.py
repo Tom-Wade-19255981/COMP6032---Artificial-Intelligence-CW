@@ -210,7 +210,7 @@ for run in range(numDays):
                             userExit.set()  # notify the roboUber thread that we are exiting
                             userConfirmExit.set()  # then allow it to do so         (BUGFIX 26 Nov 2024 ADR)
                             roboUber.join()  # wait 'til the simulation thread ends (BUGFIX 26 Nov 2024 ADR)
-                            fareFile.close()
+                            if fareFile is not None: fareFile.close()
                             pygame.quit()
                             sys.exit()
                         userConfirmExit.set()  # if user didn't want to quit, resume simulation (BUGFIX 26 Nov 2024 ADR)
@@ -299,6 +299,6 @@ for run in range(numDays):
     roboUber.join()  # wait 'til the simulation thread ends (BUGFIX 26 Nov 2024 ADR)
     print("Joined with robo thread")
 # reached the end of the loop. Next day (or exit)
-fareFile.close()
+if fareFile is not None: fareFile.close()
 pygame.quit()
 sys.exit()
