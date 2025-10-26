@@ -2,6 +2,7 @@ import math
 import numpy
 import heapq
 import inspect
+import threading # BUGFIX 21 October 2025 ADR needed to support stable output
 
 from node import Node
 from fare import Fare
@@ -617,41 +618,50 @@ class NetWorld:
       # runWorld operates the model. It can be run in single-stepping mode (ticks = 1), batch mode
       # (ticks = 0) or any number of step-aggregation modes (ticks > 1). In batch mode, live output
       # may be unreliable, if running in a separate thread.
-      def runWorld(self,ticks=0,outputs=None):
+      # added locking mechanism to protect live output. *Should* be reliable now. (BUGFIX 21 October 2025 ADR)
+      def runWorld(self,ticks=0,outputs=None,outlock=None):
           if outputs is None:
              outputs = {}
+             outlock = threading.Lock()
           ticksRun = 0
           while (ticks == 0 or ticksRun < ticks) and (self.runTime == 0 or self._time < self.runTime):
                 print("Current time in the simulation world: {0}".format(self._time))
+                outlock.acquire()
                 if 'time' in outputs:
                    outputs['time'].append(self._time)
+                outlock.release()
                 # really simple recording of fares: just where there are fares still waiting. More
                 # sophisticated recording including price information and enroute fare information,
                 # could easily be added, e.g. by making the fare output a list of fare objects.
+                outlock.acquire()
                 if 'fares' in outputs:
                    for fare in self._fareQ.values():
                        if fare.origin in outputs['fares']:
                           outputs['fares'][fare.origin][self._time] = fare.calltime
                        else:
                           outputs['fares'][fare.origin] = {self._time: fare.calltime}
+                outlock.release()
                 # go through all the nodes and update the time tick
                 for node in self._net.values():
                     node.clockTick(self)
                     # we can output live traffic information if we want. Or possibly other
                     # parameters of a node, depending on how much reporting is desirable. (With
-                    # very large networks and lots of reporting, this could slow things considerably)                   
+                    # very large networks and lots of reporting, this could slow things considerably)
+                    outlock.acquire()
                     if 'nodes' in outputs:
                         if node.index in outputs['nodes']:
                            outputs['nodes'][node.index][self._time] = node.traffic
                         else:
                            outputs['nodes'][node.index] = {self._time: node.traffic}
+                    outlock.release()
                 # next go through the (live) taxis
                 for taxi in self._taxis.items():
                     if taxi[0].onDuty:
                        taxi[0].drive(taxi[1][1])
                        taxi[0].clockTick(self)
                        # similarly basic recording of taxis: just their current position, as long as they
-                       # are on duty. 
+                       # are on duty.
+                       outlock.acquire()
                        if 'taxis' in outputs:
                           # taxi[1][0][0] is taxi[admission_request][current_pose][current_node] where
                           # current_pose is a (node, direction) pair. So this is just asking: is the taxi
@@ -663,6 +673,7 @@ class NetWorld:
                              else:
                                 # outputs['taxis'][taxi[0].number] = {self._time: taxi[0].currentLocation}
                                 outputs['taxis'][taxi[0].number] = {self._time: taxi[1][0][0].index}
+                       outlock.release()
                     # an off-duty taxi can come on if it decides to (and will call addTaxi to add itself)
                     else:
                        taxi[0].comeOnDuty(self._time)
