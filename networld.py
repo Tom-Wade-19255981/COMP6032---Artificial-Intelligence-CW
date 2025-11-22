@@ -656,6 +656,8 @@ class NetWorld:
                     outlock.release()
                 # next go through the (live) taxis
                 for taxi in self._taxis.items():
+                    # {taxi_obj: ((here_loc, here_dir), (admit_loc, admit_dir))
+                    print(f"TAXIII: {taxi}")
                     if taxi[0].onDuty:
                        taxi[0].drive(taxi[1][1])
                        taxi[0].clockTick(self)
@@ -669,10 +671,14 @@ class NetWorld:
                           if taxi[1][0][0] is not None:
                              if taxi[0].number in outputs['taxis']:
                                 # outputs['taxis'][taxi[0].number][self._time] = taxi[0].currentLocation
-                                outputs['taxis'][taxi[0].number][self._time] = taxi[1][0][0].index
+
+                                #Original: outputs['taxis'][taxi[0].number][self._time] = taxi[1][0][0].index
+                                outputs['taxis'][taxi[0].number][self._time] = (taxi[1][0][0].index, taxi[1][0][0].getAccount())
                              else:
                                 # outputs['taxis'][taxi[0].number] = {self._time: taxi[0].currentLocation}
-                                outputs['taxis'][taxi[0].number] = {self._time: taxi[1][0][0].index}
+
+                                #Original: outputs['taxis'][taxi[0].number] = {self._time: taxi[1][0][0].index}
+                                outputs['taxis'][taxi[0].number] = {self._time: (taxi[1][0][0].index, taxi[1][0][0].getAccount())}
                        outlock.release()
                     # an off-duty taxi can come on if it decides to (and will call addTaxi to add itself)
                     else:

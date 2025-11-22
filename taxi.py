@@ -103,7 +103,7 @@ class Taxi:
 
           # the dictionary items, meanwhile, contain a FareInfo object with the price, the destination, and whether 
           # or not this taxi has been allocated the fare (and thus should proceed to collect them ASAP from the origin)
-          self._availableFares = {}
+          self._availableFares = {} #(time,x,y):FareInfo
 
       # This property allows the dispatcher to query the taxi's location directly. It's like having a GPS transponder
       # in each taxi.
@@ -182,7 +182,7 @@ class Taxi:
              # so drop them off.
              if self._passenger is not None:
                 if self._loc.dropoffFare(self._passenger, self._direction):
-                   self._passenger = None
+                   self._passenger = None #QUESTION: No adding to the fare?
                 # failure to drop off means probably we're not at the destination. But check
                 # anyway, and replan if this is the case.
                 elif self._passenger.destination != self._loc.index:
@@ -196,6 +196,8 @@ class Taxi:
               # meanwhile, is an (x, y) tuple. So fare[0][0] is the time the fare called, fare[0][1]
               # is the fare's originx, and fare[0][2] is the fare's originy, which we can use to
               # build the location tuple.
+
+              #EZ REMINDER: fare = ((time, x, y), FareInfo)
               origin = (fare[0][1], fare[0][2])
               # much more intelligent things could be done here. This simply naively takes the first
               # allocated fare we have and plans a basic path to get us from where we are to where
@@ -309,6 +311,7 @@ class Taxi:
           # the dispatcher has approved our bid: mark the fare as ours
           elif msg == self.FARE_ALLOC:
              for fare in self._availableFares.items():
+                 # EZ REMINDER: fare = ((time, x, y), FareInfo)
                  if fare[0][1] == args['origin'][0] and fare[0][2] == args['origin'][1]:
                     if fare[1].destination[0] == args['destination'][0] and fare[1].destination[1] == args['destination'][1]:
                        fare[1].allocated = True
@@ -344,6 +347,7 @@ class Taxi:
           # take the next node in the frontier, and expand it depth-wise               
           if origin in self._map:
              # the frontier of unexplored paths (from this Node
+             #(x,y):(dir,distance)
              frontier = [node for node in self._map[origin].keys() if node not in args['explored']]
              # recurse down to the next node. This will automatically create a depth-first
              # approach because the recursion won't bottom out until no more frontier nodes
@@ -357,7 +361,8 @@ class Taxi:
                        try:
                            # use a generator expression to find any invalid nodes in the path
                            badNode = next(pnode for pnode in path[1:] if pnode not in self._map[path[path.index(pnode)-1]].keys())
-                           raise IndexError("Invalid path: no route from ({0},{1}) to ({2},{3} in map".format(self._map[path.index(pnode)-1][0], self._map[path.index(pnode)-1][1], pnode[0], pnode[1]))
+                           #raise line was using pnode which wasn't instantiated, I took an educated guess it was supposed to be badNode instead
+                           raise IndexError("Invalid path: no route from ({0},{1}) to ({2},{3} in map".format(self._map[path.index(badNode)-1][0], self._map[path.index(badNode)-1][1], badNode[0], badNode[1]))
                        except StopIteration:
                            pass
                     return path
@@ -391,6 +396,10 @@ class Taxi:
           Worthwhile = PriceBetterThanCost and NotCurrentlyBooked 
           Bid = CloseEnough and Worthwhile
           return Bid
+
+      #Methods I've added :)
+      def getAccount(self):
+          return self._account
 
 
 

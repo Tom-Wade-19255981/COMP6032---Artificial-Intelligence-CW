@@ -161,21 +161,26 @@ class Dispatcher:
       # allocateFare(origin, taxi).
       def clockTick(self, parent):
           if self._parent == parent:
-             for origin in self._fareBoard.keys():
-                 for destination in self._fareBoard[origin].keys():
-                     # TODO - if you can come up with something better. Not essential though.
-                     # not super-efficient here: need times in order, dictionary view objects are not
-                     # sortable because they are an iterator, so we need to turn the times into a
-                     # sorted list. Hopefully fareBoard will never be too big
-                     for time in sorted(list(self._fareBoard[origin][destination].keys())):
-                         if self._fareBoard[origin][destination][time].price == 0:
-                            self._fareBoard[origin][destination][time].price = self._costFare(self._fareBoard[origin][destination][time])
-                            # broadcastFare actually returns the number of taxis that got the info, if you
-                            # wish to use that information in the decision over when to allocate
-                            self._parent.broadcastFare(origin,
-                                                       destination,
-                                                       self._fareBoard[origin][destination][time].price)
-                         elif self._fareBoard[origin][destination][time].taxi < 0 and len(self._fareBoard[origin][destination][time].bidders) > 0:
+              #print(f"fareBoard keys: {self._fareBoard.keys()}")
+              for origin in self._fareBoard.keys():
+                  #print(f"fareBoard[origin] keys: {self._fareBoard[origin].keys()}")
+                  for destination in self._fareBoard[origin].keys():
+                      #print(f"fareBoard[origin][destination] keys: {self._fareBoard[origin][destination].keys()}")
+                      # TODO - if you can come up with something better. Not essential though.
+                      # not super-efficient here: need times in order, dictionary view objects are not
+                      # sortable because they are an iterator, so we need to turn the times into a
+                      # sorted list. Hopefully fareBoard will never be too big
+                      for time in sorted(list(self._fareBoard[origin][destination].keys())):
+                          if self._fareBoard[origin][destination][time].price == 0:
+                              self._fareBoard[origin][destination][time].price = self._costFare(
+                                  self._fareBoard[origin][destination][time])
+                              # broadcastFare actually returns the number of taxis that got the info, if you
+                              # wish to use that information in the decision over when to allocate
+                              self._parent.broadcastFare(origin,
+                                                         destination,
+                                                         self._fareBoard[origin][destination][time].price)
+                          elif self._fareBoard[origin][destination][time].taxi < 0 and len(
+                                self._fareBoard[origin][destination][time].bidders) > 0:
                               self._allocateFare(origin, destination, time)
 
       #----------------------------------------------------------------------------------------------------------------

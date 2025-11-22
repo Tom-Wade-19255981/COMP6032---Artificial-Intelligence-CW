@@ -321,6 +321,7 @@ class Node:
       # that the fare has been conducted to the destination (and the controller will allocate
       # payments accordingly)
       def dropoffFare(self, fare, direction):
+          print("Dropping fare off.")
           if direction in self._occupied:
              # fares will only alight at their actual destination (naturally)
              if fare is not None and fare.destination == self._idx and self._occupied[direction][1] >= self._parent.simTime:
