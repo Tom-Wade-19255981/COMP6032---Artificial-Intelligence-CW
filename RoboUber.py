@@ -36,10 +36,10 @@ def runRoboUber(worldX,worldY,runTime,stop,junctions=None,streets=None,interpola
 
    # create some taxis
    print("Creating taxis")
-   taxi0 = taxi.Taxi(world=svcArea,taxi_num=100,service_area=svcMap,start_point=(20,0))
-   taxi1 = taxi.Taxi(world=svcArea,taxi_num=101,service_area=svcMap,start_point=(49,15))
-   taxi2 = taxi.Taxi(world=svcArea,taxi_num=102,service_area=svcMap,start_point=(15,49))
-   taxi3 = taxi.Taxi(world=svcArea,taxi_num=103,service_area=svcMap,start_point=(0,35))
+   taxi0 = taxi.Taxi(world=svcArea,taxi_num=100,service_area=svcMap,start_point=(20,0))#,idle_loss=1001)
+   taxi1 = taxi.Taxi(world=svcArea,taxi_num=101,service_area=svcMap,start_point=(49,15))#,idle_loss=1001)
+   taxi2 = taxi.Taxi(world=svcArea,taxi_num=102,service_area=svcMap,start_point=(15,49))#,idle_loss=1001)
+   taxi3 = taxi.Taxi(world=svcArea,taxi_num=103,service_area=svcMap,start_point=(0,35))#,idle_loss=1001)
 
    taxis = [taxi0,taxi1,taxi2,taxi3]
 
@@ -69,7 +69,7 @@ def runRoboUber(worldX,worldY,runTime,stop,junctions=None,streets=None,interpola
             svcArea.runWorld(ticks=1, outputs=outputValues, outlock=oLock)
             if threadTime != svcArea.simTime:
                threadTime += 1
-            time.sleep(0.25)        # change this value to speed up the simulation. Smaller times = faster runs
+            time.sleep(0.05)        # change this value to speed up the simulation. Smaller times = faster runs
 
 
 # file to record appearing Fares. You can use similar instrumentation to record just about anything else of interest
@@ -162,7 +162,8 @@ fareRect = pygame.Rect(round(3*meshSize[0]/8),
 for run in range(numDays):
 
     # create a dict of things we want to record
-    outputValues = {'time': [], 'fares': {}, 'taxis': {}}
+    # added return output value: {taxi:(world_time, revenue),...,dispatcher(world_time, revenue)}
+    outputValues = {'time': [], 'fares': {}, 'taxis': {}, 'return': {}, 'fare_alloc': {}}
 
     outputLock = threading.Lock() # BUGFIX 21 October 2025 protect outputValues dict
 
@@ -292,11 +293,15 @@ for run in range(numDays):
     print("end of day: {0}".format(run))
     print("--- Output Values ---")
     print(f"Taxis:")
-    for taxi in outputValues['taxis']:
-        print(taxi)
-    print()
-    print("Keys:",outputValues['taxis'].keys())
-    print("Values:",outputValues['taxis'].values())
+    for revenue in outputValues['return']:
+        print(revenue,":",outputValues['return'][revenue])
+
+    print("Allocated Fares: ")
+    print(outputValues['fare_alloc'])
+
+    # print(f"\nFares:")
+    # for fare in outputValues['fares']:
+    #     print (fare, ":", outputValues['fares'][fare])
 
 
 # reached the end of the loop. Next day (or exit)

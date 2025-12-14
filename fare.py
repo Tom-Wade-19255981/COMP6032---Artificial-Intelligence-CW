@@ -33,6 +33,7 @@ class Fare:
       def dropOff(self):
           self._enroute = False
           self._origin = self._destination
+          print("Fare: I've been dropped off")
 
       # inform the fare of the expected price for the ride
       def setPrice(self, price):

@@ -30,6 +30,7 @@ class FareParamGenerator:
 
       def getDestination(self, **destparams):
           if self._destination is None:
+              #Pick a random node in the world to claim as the destination
              self._destination = self._world.nodes[round(self._destGen.uniform(low=0, high=self._world.size-1))]
           return self._destination
 
@@ -560,9 +561,10 @@ class RandomParamGenerator(FareParamGenerator):
 
 class FlatParamGenerator(FareParamGenerator):
 
-      def __init__(world, origin, destination=None, **distparams): #wait=None, cost=None):
+        #Added self to __init__ and removed self from super instantiation
+      def __init__(self, world, origin, destination=None, **distparams): #wait=None, cost=None):
 
-          super().__init__(self, world=world, origin=origin, destination=destination, **distparams)
+          super().__init__(world=world, origin=origin, destination=destination, **distparams)
           ''' the **distparams dictionary should (or can) contain:
               1) a fixed upper cost (['costparams'])
               2) a flat wait time (['waitparams'])
