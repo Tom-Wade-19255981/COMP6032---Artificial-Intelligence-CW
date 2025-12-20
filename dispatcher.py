@@ -128,7 +128,7 @@ class Dispatcher:
             if destination in self._fareBoard[origin]:
                 if calltime in self._fareBoard[origin][destination]:
                     # get rid of it
-                    print("Fare ({0},{1}) cancelled".format(origin[0], origin[1]))
+                    #print("Fare ({0},{1}) cancelled".format(origin[0], origin[1]))
                     # inform taxis that the fare abandoned
                     self._parent.cancelFare(origin, self._taxis[self._fareBoard[origin][destination][calltime].taxi])
                     del self._fareBoard[origin][destination][calltime]
@@ -166,11 +166,14 @@ class Dispatcher:
     # 2 main functions the dispatcher needs to run in the world: broadcastFare(origin, destination, price) and
     # allocateFare(origin, taxi).
     def clockTick(self, parent):
+        #print ("\n\n\n DISPATCHER CLOCK TICK")
         if self._parent == parent:
             # print(f"fareBoard keys: {self._fareBoard.keys()}")
             for origin in self._fareBoard.keys():
+                #print (f"Origins: {self._fareBoard[origin]}")
                 # print(f"fareBoard[origin] keys: {self._fareBoard[origin].keys()}")
                 for destination in self._fareBoard[origin].keys():
+                    #print (f"Desinations: {self._fareBoard[origin][destination]}")
                     # print(f"fareBoard[origin][destination] keys: {self._fareBoard[origin][destination].keys()}")
                     # TODO - if you can come up with something better. Not essential though.
                     # not super-efficient here: need times in order, dictionary view objects are not
@@ -217,37 +220,56 @@ class Dispatcher:
     # action. You should be able to do better than this. After balancing allocations, try to optimise which
     # fares are allocated to which taxi (or indeed to any taxi at all!)
     def _allocateFare(self, origin, destination, time):
+        idle_weighting = 1
+
+        #self._fareBoard = {origin:{destination: {time: FareEntry}}, ...}
+
+        #NOTE: I rearranged the code in this method to make it much more readable
+
         # a very simple approach here gives taxis at most 5 ticks to respond, which can
         # surely be improved upon.
-        if self._parent.simTime - time > 5:
-            allocatedTaxi = -1
-            winnerNode = None
-            fareNode = self._parent.getNode(origin[0], origin[1])
-            # this does the allocation. There are a LOT of conditions to check, namely:
-            # 1) that the fare is asking for transport from a valid location;
-            # 2) that the bidding taxi is in the dispatcher's list of taxis
+        if self._parent.simTime - time < 5:
+            return
+
+        # 1) that the fare is asking for transport from a valid location;
+        fareNode = self._parent.getNode(origin[0], origin[1])
+        if fareNode is None: return
+
+        allocatedTaxi = -1
+        winnerNode = None
+        bestScore = float("inf") #Set best score to be impossible to NOT beat
+
+        if len(self._fareBoard[origin][destination][time].bidders
+               ) <= 2:
+            return
+
+        # 2) that the bidding taxi is in the dispatcher's list of taxis
+        for taxiIdx in self._fareBoard[origin][destination][time].bidders:
             # 3) that the taxi's location is 'on-grid': somewhere in the dispatcher's map
+            if len(self._taxis) <= taxiIdx: continue
+
+            bidderLoc = self._taxis[taxiIdx].currentLocation
+            bidderNode = self._parent.getNode(bidderLoc[0], bidderLoc[1])
+
             # 4) that at least one valid taxi has actually bid on the fare
-            if fareNode is not None:
-                for taxiIdx in self._fareBoard[origin][destination][time].bidders:
-                    if len(self._taxis) > taxiIdx:
-                        bidderLoc = self._taxis[taxiIdx].currentLocation
-                        bidderNode = self._parent.getNode(bidderLoc[0], bidderLoc[1])
-                        if bidderNode is not None:
-                            # ultimately the naive algorithm chosen is which taxi is the closest. This is patently unfair for several
-                            # reasons, but does produce *a* winner.
-                            if winnerNode is None or self._parent.distance2Node(bidderNode,
-                                                                                fareNode) < self._parent.distance2Node(
-                                    winnerNode, fareNode):
-                                allocatedTaxi = taxiIdx
-                                winnerNode = bidderNode
-                            else:
-                                # and after all that, we still have to check that somebody won, because any of the other reasons to invalidate
-                                # the auction may have occurred.
-                                if allocatedTaxi >= 0:
-                                    # but if so, allocate the taxi.
-                                    self._fareBoard[origin][destination][time].taxi = allocatedTaxi
-                                    self._parent.allocateFare(origin, self._taxis[allocatedTaxi])
+            if bidderNode is None: continue
+
+
+            distance = self._parent.distance2Node(bidderNode, fareNode)
+            idle_wait = self._parent.simTime - self._taxis[taxiIdx].lastFareAllocation
+            score = distance - idle_weighting * idle_wait
+
+            if winnerNode is None or score < bestScore:
+                allocatedTaxi = taxiIdx
+                winnerNode = bidderNode
+                bestScore = score
+
+        # and after all that, we still have to check that somebody won, because any of the other reasons to invalidate
+        # the auction may have occurred.
+        if allocatedTaxi >= 0:
+            # but if so, allocate the taxi.
+            self._fareBoard[origin][destination][time].taxi = allocatedTaxi
+            self._parent.allocateFare(origin, self._taxis[allocatedTaxi])
 
     #methods I've added :)
     def getRevenue(self):

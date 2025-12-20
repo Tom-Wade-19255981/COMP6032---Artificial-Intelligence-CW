@@ -109,6 +109,8 @@ class Taxi:
         # or not this taxi has been allocated the fare (and thus should proceed to collect them ASAP from the origin)
         self._availableFares = {}  # (time,x,y):FareInfo
 
+        self.lastFareAllocation = 0
+
     # This property allows the dispatcher to query the taxi's location directly. It's like having a GPS transponder
     # in each taxi.
     @property
@@ -222,7 +224,6 @@ class Taxi:
                 else:
                     #self._aStarPath(self._loc.index, origin)
                     self._path = self._planPath(self._loc.index, origin)
-                    print ("PATH: ", self._path)
             # get rid of any unallocated fares that are too stale to be likely customers
             elif self._world.simTime - fare[0][0] > self._maxFareWait:
                 faresToRemove.append(fare[0])
@@ -230,7 +231,7 @@ class Taxi:
             # doesn't need to be a particularly early or late decision amongst the things to do.
             elif fare[1].bid == 0:
                 if self._bidOnFare(fare[0][0], origin, fare[1].destination, fare[1].price):
-                    print(f"T{self.number} has bid on a fare at {fare[1].destination}.")
+                    #print(f"T{self.number} has bid on a fare at {fare[1].destination}.")
                     self._world.transmitFareBid(origin, self)
                     fare[1].bid = 1
                 else:
@@ -257,9 +258,10 @@ class Taxi:
             self._nextLoc = None
             self._nextDirection = -1
         else:
-            msg=f"T{self.number}: I'm driving to {newPose[0].index} with direction {newPose[1]}."
-            if self._passenger is not None: msg+="I have a passenger."
-            print(msg)
+            # msg=f"T{self.number}: I'm driving to {newPose[0].index} with direction {newPose[1]}."
+            # if self._passenger is not None: msg+="I have a passenger."
+            # print(msg)
+            pass
         # if we do have a direction, as long as we are not stopping here,
         if self._nextLoc is not None:
             # and we have the green light to proceed,
@@ -491,4 +493,4 @@ class Taxi:
 
     # Methods I've added :)
     def getAccount(self):
-        return self._account
+      return self._account

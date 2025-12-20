@@ -637,11 +637,9 @@ class NetWorld:
     # completeFare is called by the taxi and registers the fare as conducted to the destination
     # which then assigns the fare's price to the Taxi and Dispatcher.
     def completeFare(self, fare):
-        print("Attempting to pay taxi & dispatcher.")
         self._dispatcher.recvPayment(self, fare.price * 0.1)
-        print("Dispatcher sent payment message.")
         fare.taxi.recvMsg(fare.taxi.FARE_PAY, **{'amount': fare.price * 0.9})
-        print("Taxi sent payment message")
+        fare.taxi.lastFareAllocation = self._time
         # get rid of the fare's taxi allocation so that garbage collection doesn't have to worry
         # about back pointers. The taxi itself should already have got rid of the fare in the
         # completeFare call.
@@ -704,7 +702,6 @@ class NetWorld:
             # next go through the (live) taxis
             for taxi in self._taxis.items():
                 # {taxi_obj: [(here_loc, here_dir), (admit_loc, admit_dir)]
-                #print(f"TAXIII: {taxi}")
                 if taxi[0].onDuty:
                     #print(f"taxi:{taxi}\n taxi[0]:{taxi[0]}\n taxi[1][1]:{taxi[1][1]}\n")
                     taxi[0].drive(taxi[1][1])

@@ -69,7 +69,7 @@ def runRoboUber(worldX,worldY,runTime,stop,junctions=None,streets=None,interpola
             svcArea.runWorld(ticks=1, outputs=outputValues, outlock=oLock)
             if threadTime != svcArea.simTime:
                threadTime += 1
-            time.sleep(0.05)        # change this value to speed up the simulation. Smaller times = faster runs
+            #time.sleep(0.01)        # change this value to speed up the simulation. Smaller times = faster runs
 
 
 # file to record appearing Fares. You can use similar instrumentation to record just about anything else of interest
@@ -158,6 +158,8 @@ fareRect = pygame.Rect(round(3*meshSize[0]/8),
                        round(meshSize[0]/4),
                        round(meshSize[1]/4))
 
+
+average_returns = {'taxis':0, "dispatcher": 0}
 # you can run for more than a day if desired.
 for run in range(numDays):
 
@@ -216,7 +218,7 @@ for run in range(numDays):
         except StopIteration:
             #pygame.event.get()
             if 'time' in outputValues and len(outputValues['time']) > 0 and curTime != outputValues['time'][-1]:
-                print("curTime: {0}, world.time: {1}".format(curTime,outputValues['time'][-1]))
+                #print("curTime: {0}, world.time: {1}".format(curTime,outputValues['time'][-1]))
 
                 # naive: redraw the entire map each time step. This could be improved by saving a list of squares
                 # to redraw and being incremental, but there is a fair amount of bookkeeping involved.
@@ -293,9 +295,15 @@ for run in range(numDays):
     print("end of day: {0}".format(run))
     print("--- Output Values ---")
     print(f"Taxis:")
+    taxi_off_duty = 0
     for revenue in outputValues['return']:
         print(revenue,":",outputValues['return'][revenue])
+        if isinstance(revenue, str):
+            average_returns['dispatcher'] += outputValues['return'][revenue][1]
+        else:
+            taxi_off_duty += outputValues['return'][revenue][0]
 
+    average_returns['taxis'] += taxi_off_duty/4
     print("Allocated Fares: ")
     print(outputValues['fare_alloc'])
 
@@ -303,6 +311,8 @@ for run in range(numDays):
     # for fare in outputValues['fares']:
     #     print (fare, ":", outputValues['fares'][fare])
 
+
+print (f"Taxis {average_returns['taxis']/15}, Dispatcher: {average_returns['dispatcher']/15}")
 
 # reached the end of the loop. Next day (or exit)
 if fareFile is not None: # BUGFIX handle no open fare file to record ADR 21 October 2025
