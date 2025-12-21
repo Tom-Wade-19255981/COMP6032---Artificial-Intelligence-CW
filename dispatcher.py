@@ -175,6 +175,7 @@ class Dispatcher:
                 for destination in self._fareBoard[origin].keys():
                     #print (f"Desinations: {self._fareBoard[origin][destination]}")
                     # print(f"fareBoard[origin][destination] keys: {self._fareBoard[origin][destination].keys()}")
+
                     # TODO - if you can come up with something better. Not essential though.
                     # not super-efficient here: need times in order, dictionary view objects are not
                     # sortable because they are an iterator, so we need to turn the times into a
@@ -207,12 +208,36 @@ class Dispatcher:
 
     # TODO - improve costing
     def _costFare(self, fare):
+        distance_weight = 8.5
+        popularity_weight = 3
+        #Calculate the average time it takes for a taxi to get to the fare
+
+        average_distance = 0; num_taxis = 0;
+        for taxi in self._parent.taxis:
+            taxi_loc = taxi.currentLocation
+            if taxi_loc != (-1,-1) and taxi.onDuty:
+                average_distance += self._parent.travelTime(self._parent.getNode(taxi_loc[0], taxi_loc[1]),
+                                                            self._parent.getNode(fare.origin[0], fare.origin[1]))
+                num_taxis+=1
+
+        if num_taxis > 0:
+            average_distance /= num_taxis
+            average_distance *= distance_weight
+        else:
+            #How to cost fare when no taxis?
+            average_distance = -1 * 100000
+
+        #Reduce price when a fare is popular, increase when unpopular
+        popularity_cost = popularity_weight * len(self._fareBoard[fare.origin][fare.destination][self._parent.simTime].bidders)
+
+
         timeToDestination = self._parent.travelTime(self._parent.getNode(fare.origin[0], fare.origin[1]),
                                                     self._parent.getNode(fare.destination[0], fare.destination[1]))
         # if the world is gridlocked, a flat fare applies.
         if timeToDestination < 0:
             return 150
-        return (25 + timeToDestination) / 0.9
+
+        return (average_distance + timeToDestination - popularity_cost) / 0.9
 
     # TODO
     # this method decides which taxi to allocate to a given fare. The algorithm here is not a fair allocation

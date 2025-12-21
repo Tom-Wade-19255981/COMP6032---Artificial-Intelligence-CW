@@ -163,7 +163,7 @@ class Node:
                 # fares won't wait forever for a ride
 
                 # changed condition to check if fare is enroute, very little drop-offs happening and my hypothesis
-                # is fares are being removed while in transit.
+                # is fares are being removed while in transit. -> this was wrong but no point in removing it
                 if self._parent.simTime - self._fare.calltime > self._fare.maxWait and not self._fare.enroute:
                     self._parent.removeFare(self._fare)
                     self._fare = None
