@@ -10,7 +10,7 @@ import networld
 worldX = 50
 worldY = 50
 runTime = 800 #1440 # number of ticks in a 'day'
-numDays = 15   # number of days to run
+numDays = 45   # number of days to run
 # you can change the DisplaySize to be bigger if you want larger-size objects on-screen
 displaySize = (1024,768)
 trafficOn = False

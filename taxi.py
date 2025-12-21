@@ -471,24 +471,57 @@ class Taxi:
     # a hint that maybe some form of CSP solver with automated reasoning might be a good way of implementing this. But
     # other methodologies could work well. For best results you will almost certainly need to use probabilistic reasoning.
     def _bidOnFare(self, time, origin, destination, price):
-        NoCurrentPassengers = self._passenger is None
-        NoAllocatedFares = len([fare for fare in self._availableFares.values() if fare.allocated]) == 0
-        TimeToOrigin = self._world.travelTime(self._loc, self._world.getNode(origin[0], origin[1]))
-        TimeToDestination = self._world.travelTime(self._world.getNode(origin[0], origin[1]),
-                                                   self._world.getNode(destination[0], destination[1]))
-        FiniteTimeToOrigin = TimeToOrigin > 0
-        FiniteTimeToDestination = TimeToDestination > 0
-        CanAffordToDrive = self._account > TimeToOrigin
-        FairPriceToDestination = price > TimeToDestination
-        PriceBetterThanCost = FairPriceToDestination and FiniteTimeToDestination
-        FareExpiryInFuture = self._maxFareWait > self._world.simTime - time
-        EnoughTimeToReachFare = self._maxFareWait - self._world.simTime + time > TimeToOrigin
-        SufficientDrivingTime = FiniteTimeToOrigin and EnoughTimeToReachFare
-        WillArriveOnTime = FareExpiryInFuture and SufficientDrivingTime
-        NotCurrentlyBooked = NoCurrentPassengers and NoAllocatedFares
-        CloseEnough = CanAffordToDrive and WillArriveOnTime
-        Worthwhile = PriceBetterThanCost and NotCurrentlyBooked
-        Bid = CloseEnough and Worthwhile
+        #Non negotiable situations
+
+        #If we already have a passenger
+        if self._passenger is not None:
+            return False
+
+        #If we've already been assigned a fare
+        if len([fare for fare in self._availableFares.values() if fare.allocated]) != 0:
+            return False
+
+
+        PathToFare = self._planPath(self._loc.index, origin)
+        TrafficToFare = 0
+
+        for node in PathToFare:
+            TrafficToFare += self._world.getNode(node[0], node[1]).traffic
+        dTimeToFare = len(PathToFare)
+        pTimeToFare = dTimeToFare + TrafficToFare
+
+
+        PathToDestination = self._planPath(origin, destination)
+        TrafficInFare = 0
+
+        for node in PathToDestination:
+            TrafficInFare += self._world.getNode(node[0], node[1]).traffic
+        dTimeToComplete = len(PathToDestination)
+        pTimeToComplete = dTimeToComplete + TrafficInFare
+
+        if time % 100 == 0:
+            TimeToOrigin = self._world.travelTime(self._loc, self._world.getNode(origin[0], origin[1]))
+            TimeToDestination = self._world.travelTime(self._world.getNode(origin[0], origin[1]),
+                                                       self._world.getNode(destination[0], destination[1]))
+            print(f"\n\n\nTime to fare: b4: {TimeToOrigin}, after: {dTimeToFare}")
+            print(f"Time to complete: b4: {TimeToDestination}, after: {dTimeToComplete}")
+
+
+        #If the origin or destination is full, we can't complete this fare
+        if self._world.getNode(origin[0],origin[1]).isGridlocked or \
+              self._world.getNode(destination[0],destination[1]).isGridlocked:
+            return False
+
+        #If we won't be able to get to the fare before it expires
+        if not (self._maxFareWait - self._world.simTime + time > dTimeToFare):
+            return False
+
+        CanAffordToDrive = self._account > dTimeToFare
+
+        ProfitMargin = 1.7 #10% markup on price
+        FairPriceToDestination = price * ProfitMargin > dTimeToComplete + dTimeToFare
+
+        Bid = CanAffordToDrive and FairPriceToDestination
         return Bid
 
     # Methods I've added :)

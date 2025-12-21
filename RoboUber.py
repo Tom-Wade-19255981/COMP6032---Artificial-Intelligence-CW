@@ -312,7 +312,7 @@ for run in range(numDays):
     #     print (fare, ":", outputValues['fares'][fare])
 
 
-print (f"Taxis {average_returns['taxis']/15}, Dispatcher: {average_returns['dispatcher']/15}")
+print (f"Taxis {average_returns['taxis']/numDays}, Dispatcher: {average_returns['dispatcher']/numDays}")
 
 # reached the end of the loop. Next day (or exit)
 if fareFile is not None: # BUGFIX handle no open fare file to record ADR 21 October 2025

@@ -183,7 +183,7 @@ class Dispatcher:
                     for time in sorted(list(self._fareBoard[origin][destination].keys())):
                         if self._fareBoard[origin][destination][time].price == 0:
                             self._fareBoard[origin][destination][time].price = self._costFare(
-                                self._fareBoard[origin][destination][time])
+                                self._fareBoard[origin][destination][time], time)
                             # broadcastFare actually returns the number of taxis that got the info, if you
                             # wish to use that information in the decision over when to allocate
                             self._parent.broadcastFare(origin,
@@ -207,7 +207,10 @@ class Dispatcher:
     '''
 
     # TODO - improve costing
-    def _costFare(self, fare):
+
+    #Accessing the number of bidders using self._parent.simTime was causing key errors
+    #I decided to 'cheat' and pass time as a parameter to prevent this
+    def _costFare(self, fare, time):
         distance_weight = 8.5
         popularity_weight = 3
         #Calculate the average time it takes for a taxi to get to the fare
@@ -228,7 +231,7 @@ class Dispatcher:
             average_distance = -1 * 100000
 
         #Reduce price when a fare is popular, increase when unpopular
-        popularity_cost = popularity_weight * len(self._fareBoard[fare.origin][fare.destination][self._parent.simTime].bidders)
+        popularity_cost = popularity_weight * len(self._fareBoard[fare.origin][fare.destination][time].bidders)
 
 
         timeToDestination = self._parent.travelTime(self._parent.getNode(fare.origin[0], fare.origin[1]),

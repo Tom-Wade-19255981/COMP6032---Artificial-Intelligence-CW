@@ -98,6 +98,13 @@ class Node:
     def maxTraffic(self):
         return self._trafficMax
 
+
+    #I added this, if I can see max traffic and current traffic, why not this?
+    @property
+    def isGridlocked(self):
+        return self._traffic == self._trafficMax
+
+
     # neighbours returns a list of non-None adjacent Nodes (i.e. accessible locations from
     # this Node) as tuples of the format (index, x, y) where index is the absolute directional
     # index in the _neighbours list
